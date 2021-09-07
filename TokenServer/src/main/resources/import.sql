@@ -1,0 +1,1 @@
+INSERT INTO user_List (id, user_id, password, email, created_at, updated_at) VALUES (0, "kimcoding", "1234", "kimcoding@authstates.com", now(), now());
