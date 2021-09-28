@@ -27,17 +27,29 @@ public class TokenService {
     public String CreateJwtToken(UserList userList, Long time) {
         // claim에 포함 되어야 하는 내용은 "userId", "password" 입니다.
         // TODO :
-
+        Date now = new Date();
+        return Jwts.builder()
+                .setHeaderParam(Header.TYPE,Header.JWT_TYPE)
+                .setIssuer("fresh")
+                .setIssuedAt(now)
+                .setExpiration(new Date(now.getTime() + Duration.ofSeconds(time).toMillis()))
+                .claim("userId",userList.getUserId())
+                .claim("password", userList.getPassword())
+                .signWith(SignatureAlgorithm.ES256,SIGN_KEY)
+                .compact();
     }
 
     // 토큰의 유효성을 체크하여 알맞은 응답을 보냅니다.
     public Map<String, String> CheckJWTToken(String key){
         try{
             // TODO :
+            Claims claims = Jwts.parser().setSigningKey(SIGN_KEY)
+                    .parseClaimsJws(key)
+                    .getBody();
 
 
             // 토큰을 체크 후 "userId 값을 리턴합니다."
-            String userid;
+            String userid = (String) claims.get("userId");
             return new HashMap<>(){
                 {
                     put("id", userid);

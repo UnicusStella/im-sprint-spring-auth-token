@@ -24,28 +24,44 @@ public class TokenController {
     private final TokenService tokenService;
 
     @Autowired
-    public TokenController(TokenService tokenService){
+    public TokenController(TokenService tokenService) {
         this.tokenService = tokenService;
     }
 
     @GetMapping(value = "/")
-    public ResponseEntity<?> TokenIndex(){
+    public ResponseEntity<?> TokenIndex() {
         return ResponseEntity.ok().body("Hello CodeStates!");
     }
 
     // id와 password를 비교한 후 토큰을 발행합니다.
     @PostMapping(value = "/login")
-    public ResponseEntity<?> UserLogin(@RequestBody(required = true) Userdata LoginData, HttpServletResponse response){
-        try{
+    public ResponseEntity<?> UserLogin(@RequestBody(required = true) Userdata LoginData, HttpServletResponse response) {
+        try {
             // id와 password 를 기준으로 데이터베이스에 일치하는 유저 데이터를 불어옵니다.
             // 유저 데이터에 userId 와 password를 토큰에 담아 accesstoken과 refreshToken을 생성합니다.
             // refreshToken은 쿠키(key -> refreshToken)에 담겨 전달 됩니다.
             // accesstoken은 body에 담겨 전달 됩니다.
             // 지속 시간은 필드에 선언 된 상수를 사용합니다.
             // TODO:
+            UserList user = tokenService.FindUser(LoginData);
+            if (user == null) {
+                return ResponseEntity.badRequest().body(new HashMap<String, String>() {{
+                    put("data", null);
+                    put("message", "not authorized");
+                }});
+            }
+            Cookie cookie = new Cookie("refreshToken",
+                    tokenService.CreateJwtToken(user, REFRESH_TIME));
+            response.addCookie(cookie);
 
+            return ResponseEntity.ok().body(new HashMap<>() {{
+                put("data", new HashMap<>() {{
+                    put("accessToken", tokenService.CreateJwtToken(user, ACCESS_TIME));
+                }});
+                put("message", "ok");
+            }});
 
-        }catch (Exception error){
+        } catch (Exception error) {
             System.out.println("Error Message : " + error);
             return ResponseEntity.badRequest().body("Error : " + error);
         }
@@ -60,26 +76,54 @@ public class TokenController {
         //accesstoken이 유효하면 데이터베이스에서 동일한 userId 값을 가진 유저 데이터 정보를 찾아 응답합니다.
         //응답 데이터에는 password 만 제외합니다.
         //TODO :
-        Map<String, String> checkResult;
+        Map<String, String> checkResult =
+                tokenService.CheckJWTToken(tokenService.extractToken(requestHeader.get("authorization")));
 
-        if(checkResult.get("id") != null){
+        if (checkResult.get("id") != null) {
+            UserList userResult = tokenService.FindByUserId(checkResult.get("id"));
+            return ResponseEntity.ok().body(new HashMap<>() {
+                {
+                    put("data", new HashMap<>() {
+                        {
+                            put("userInfo", new HashMap<>() {
+                                {
+                                    put("userId", userResult.getUserId());
+                                    put("email", userResult.getEmail());
+                                    put("createdAt", userResult.getCreatedAt());
+                                }
+                            });
+                        }
+                    });
+                    put("message", "ok");
+                }
+            });
 
-        }else{
-
+        } else {
+            return ResponseEntity.badRequest().body(new HashMap<>() {
+                {
+                    put("data", null);
+                    put("message", checkResult.get("message"));
+                }
+            });
         }
     }
 
     // accesstoken 이 만료되면, refreshToken를 검증하여 새로운 accesstoken을 발급합니다.
     @GetMapping(value = "/refreshtokenrequest")
-    public ResponseEntity<?> GetRefreshtokenRequest(HttpServletRequest request){
+    public ResponseEntity<?> GetRefreshtokenRequest(HttpServletRequest request) {
         // 쿠키를 통해 refreshToken을 받아옵니다.
         // 쿠키에 refreshToken 값이 담겨 있는지 검중합니다. -> 값이 없으면 404를 리턴합니다.
         // refreshToken 검증 후 데이터베이스에서 동일한 토큰에 id와 동일한 user를 찾습니다.
         // 찾은 user 데이터를 사용하여 새 accesstoken을 발급하여 리턴합니다.
 
+        Cookie[] cookies = request.getCookies();
         String cookiesResult = "";
-
-        if(cookiesResult.equals("")){
+        for (Cookie i : cookies) {
+            if (i.getName().equals("refreshToken")) {
+                cookiesResult = i.getValue();
+            }
+        }
+        if (cookiesResult.equals("")) {
             return ResponseEntity.badRequest().body(new HashMap<>() {
                 {
                     put("data", null);
@@ -89,12 +133,30 @@ public class TokenController {
         }
 
         // TODO :
-        Map<String, String> checkResult;
-        if(checkResult.get("id") != null){
+        Map<String, String> checkResult = tokenService.CheckJWTToken(cookiesResult);
+        if (checkResult.get("id") != null) {
+            UserList userResult = tokenService.FindByUserId(checkResult.get("id"));
+            return ResponseEntity.ok().body(new HashMap<>() {{
+                put("data", new HashMap<>() {{
+                    put("accessToken", tokenService.CreateJwtToken(userResult, ACCESS_TIME));
+                    put("userInfo", new HashMap<>() {
+                        {
+                            put("userId", userResult.getUserId());
+                            put("email", userResult.getEmail());
+                            put("createdAt", userResult.getCreatedAt());
+                        }
+                    });
+                }});
+                put("message", "ok");
+            }});
 
-
-        }else{
-
+        } else {
+            return ResponseEntity.badRequest().body(new HashMap<>() {
+                {
+                    put("data", null);
+                    put("message", checkResult.get("message"));
+                }
+            });
         }
     }
 
