@@ -29,13 +29,13 @@ public class TokenService {
         // TODO :
         Date now = new Date();
         return Jwts.builder()
-                .setHeaderParam(Header.TYPE,Header.JWT_TYPE)
+                .setHeaderParam(Header.TYPE, Header.JWT_TYPE)
                 .setIssuer("fresh")
                 .setIssuedAt(now)
                 .setExpiration(new Date(now.getTime() + Duration.ofSeconds(time).toMillis()))
-                .claim("userId",userList.getUserId())
+                .claim("userId", userList.getUserId())
                 .claim("password", userList.getPassword())
-                .signWith(SignatureAlgorithm.ES256,SIGN_KEY)
+                .signWith(SignatureAlgorithm.HS256,SIGN_KEY)
                 .compact();
     }
 
@@ -49,7 +49,7 @@ public class TokenService {
 
 
             // 토큰을 체크 후 "userId 값을 리턴합니다."
-            String userid = (String) claims.get("userId");
+            String userid = (String)claims.get("userId");
             return new HashMap<>(){
                 {
                     put("id", userid);
