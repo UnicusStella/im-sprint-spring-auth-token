@@ -19,7 +19,7 @@ public class TokenService {
     private final TokenRepository tokenRepository;
 
     @Autowired
-    public TokenService(TokenRepository tokenRepository){
+    public TokenService(TokenRepository tokenRepository) {
         this.tokenRepository = tokenRepository;
     }
 
@@ -35,13 +35,13 @@ public class TokenService {
                 .setExpiration(new Date(now.getTime() + Duration.ofSeconds(time).toMillis()))
                 .claim("userId", userList.getUserId())
                 .claim("password", userList.getPassword())
-                .signWith(SignatureAlgorithm.HS256,SIGN_KEY)
+                .signWith(SignatureAlgorithm.HS256, SIGN_KEY)
                 .compact();
     }
 
     // 토큰의 유효성을 체크하여 알맞은 응답을 보냅니다.
-    public Map<String, String> CheckJWTToken(String key){
-        try{
+    public Map<String, String> CheckJWTToken(String key) {
+        try {
             // TODO :
             Claims claims = Jwts.parser().setSigningKey(SIGN_KEY)
                     .parseClaimsJws(key)
@@ -49,24 +49,24 @@ public class TokenService {
 
 
             // 토큰을 체크 후 "userId 값을 리턴합니다."
-            String userid = (String)claims.get("userId");
-            return new HashMap<>(){
+            String userid = (String) claims.get("userId");
+            return new HashMap<>() {
                 {
                     put("id", userid);
                     put("message :", "ok");
                 }
             };
 
-        }catch (ExpiredJwtException e){
-            return new HashMap<>(){
+        } catch (ExpiredJwtException e) {
+            return new HashMap<>() {
                 {
                     put("id", null);
                     put("message", "토큰 시간이 만료 되었습니다.");
                 }
             };
 
-        }catch (JwtException e){
-            return new HashMap<>(){
+        } catch (JwtException e) {
+            return new HashMap<>() {
                 {
                     put("id", null);
                     put("message", "토큰이 유효하지 않습니다.");
@@ -76,16 +76,16 @@ public class TokenService {
     }
 
     // userId를 기준으로 유저 데이터를 찾아옵니다.
-    public UserList FindByUserId(String userId){
+    public UserList FindByUserId(String userId) {
         return tokenRepository.UserFindByUserId(userId);
     }
 
     // userdata 객체를 기준으로 id와 password를 비교하여 유저 데이터를 찾아옵니다.
-    public UserList FindUser(Userdata userdata){
+    public UserList FindUser(Userdata userdata) {
         UserList userList = tokenRepository.UserFindByUserId(userdata.getUserId());
-        if(userList.getPassword().equals(userdata.getPassword())){
+        if (userList.getPassword().equals(userdata.getPassword())) {
             return userList;
-        }else {
+        } else {
             return null;
         }
     }
@@ -96,11 +96,11 @@ public class TokenService {
             throw new IllegalArgumentException();
         }
     }
+
     // 헤더에 "Bearer "를 제거합니다.
     public String extractToken(String authorizationHeader) {
         return authorizationHeader.substring("Bearer ".length());
     }
-
 
 
 }

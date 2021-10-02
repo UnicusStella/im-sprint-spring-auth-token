@@ -14,13 +14,13 @@ public class TokenRepository {
     private final EntityManager entityManager;
 
     @Autowired
-    public TokenRepository(EntityManager entityManager){
+    public TokenRepository(EntityManager entityManager) {
         this.entityManager = entityManager;
     }
 
     // UserId를 기준으로 User 데이터를 불러옵니다.
     @Transactional
-    public UserList UserFindByUserId(String userid){
+    public UserList UserFindByUserId(String userid) {
         List<UserList> list = entityManager
                 .createQuery("SELECT user FROM UserList AS user WHERE user.userId='" + userid + "'", UserList.class)
                 .getResultList();
